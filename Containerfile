@@ -82,12 +82,12 @@ RUN echo "Verifying trim_quals..." && \
 
 
 RUN git clone ${SEQ_STATS_REPO} && \
-    cd trim_quals && \
+    cd seq_stats && \
     git checkout ${SEQ_STATS_COMMIT} && \
     cargo install --path . && \
-    cd .. && rm -rf trim_quals
+    cd .. && rm -rf seq_stats
 
-RUN mv /root/.cargo/bin/trim_quals /usr/local/bin/
+RUN mv /root/.cargo/bin/seq_stats /usr/local/bin/
 
 RUN echo "Verifying seq_stats..." && \
     trim_quals --help && \
