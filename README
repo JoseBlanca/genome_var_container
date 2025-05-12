@@ -1,0 +1,5 @@
+# Container for SNP calling
+
+## How to build the template
+
+$ podman build -t genome_var -f Containerfile
