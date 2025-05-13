@@ -40,14 +40,11 @@ RUN apt-get update && apt-get install -y \
     llvm-dev \
     libclang-dev \
     clang \
+    openjdk-17-jre-headless \
     ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends openjdk-17-jre-headless && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
 
 RUN ln -s /usr/bin/python3 /usr/local/bin/python
 
@@ -67,69 +64,20 @@ RUN echo "Verifying uv..." && \
     echo "uv installed OK"
 
 
-RUN git clone ${TRIM_QUALS_REPO} && \
-    cd trim_quals && \
-    git checkout ${TRIM_QUALS_COMMIT} && \
-    cargo install --path . && \
-    cd .. && rm -rf trim_quals
 
-RUN mv /root/.cargo/bin/trim_quals /usr/local/bin/
-
-RUN echo "Verifying trim_quals..." && \
-    trim_quals --help && \
-    echo "trim_quals OK"
-
-
-
-RUN git clone ${SEQ_STATS_REPO} && \
-    cd seq_stats && \
-    git checkout ${SEQ_STATS_COMMIT} && \
-    cargo install --path . && \
-    cd .. && rm -rf seq_stats
-
-RUN mv /root/.cargo/bin/seq_stats /usr/local/bin/
-
-RUN echo "Verifying seq_stats..." && \
-    trim_quals --help && \
-    echo "trim_quals OK"
-
-
-RUN echo "Installing GATK..." && \
-    wget -q https://github.com/broadinstitute/gatk/releases/download/${GATK_VERSION}/gatk-${GATK_VERSION}.zip && \
-    unzip gatk-${GATK_VERSION}.zip && \
-    mv gatk-${GATK_VERSION} /opt/gatk && \
-    ln -s /opt/gatk/gatk /usr/local/bin/gatk && \
-    rm gatk-${GATK_VERSION}.zip
-
-RUN echo "Verifying GATK..." && \
-    gatk --version && \
-    echo "GATK installed OK"
-
-
-RUN echo "Installing bcftools..." && \
-    curl -LO https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
-    tar -xjf bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
-    cd bcftools-${BCFTOOLS_VERSION} && \
+RUN echo "Installing htslib..." && \
+    curl -LO https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2 && \
+    tar -xjf htslib-${HTSLIB_VERSION}.tar.bz2 && \
+    cd htslib-${HTSLIB_VERSION} && \
     ./configure --prefix=/usr/local && \
     make && make install && \
-    cd .. && rm -rf bcftools-${BCFTOOLS_VERSION} bcftools-${BCFTOOLS_VERSION}.tar.bz2
+    cd .. && rm -rf htslib-${HTSLIB_VERSION} htslib-${HTSLIB_VERSION}.tar.bz2
 
-RUN echo "Verifying bcftools..." && \
-    bcftools --version && \
-    echo "bcftools installed OK"
-
-    
-RUN echo "Installing fastp..." && \
-    curl -L -o fastp-${FASTP_VERSION}.tar.gz https://github.com/OpenGene/fastp/archive/refs/tags/${FASTP_VERSION}.tar.gz && \
-    tar -xzf fastp-${FASTP_VERSION}.tar.gz && \
-    cd fastp-${FASTP_VERSION#v} && \
-    make && cp fastp /usr/local/bin && \
-    cd .. && rm -rf fastp-${FASTP_VERSION#v} fastp-${FASTP_VERSION}.tar.gz
-
-RUN echo "Verifying fastp..." && \
-    fastp --version && \
-    echo "fastp installed OK"
-
+RUN echo " Verifying HTSlib..." && \
+    ldconfig && \
+    test -f /usr/local/lib/libhts.so && \
+    tabix --version && \
+    echo "HTSlib installed OK"
 
 RUN echo "Installing samtools..." && \
     wget https://github.com/samtools/samtools/releases/download/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2 && \
@@ -146,24 +94,20 @@ RUN set -e && \
     samtools --version && \
     echo "samtools installed OK"
 
-
-RUN echo "Installing htslib..." && \
-    curl -LO https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2 && \
-    tar -xjf htslib-${HTSLIB_VERSION}.tar.bz2 && \
-    cd htslib-${HTSLIB_VERSION} && \
+RUN echo "Installing bcftools..." && \
+    curl -LO https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
+    tar -xjf bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
+    cd bcftools-${BCFTOOLS_VERSION} && \
     ./configure --prefix=/usr/local && \
     make && make install && \
-    cd .. && rm -rf htslib-${HTSLIB_VERSION} htslib-${HTSLIB_VERSION}.tar.bz2
+    cd .. && rm -rf bcftools-${BCFTOOLS_VERSION} bcftools-${BCFTOOLS_VERSION}.tar.bz2
 
-RUN echo "🔍 Verifying HTSlib..." && \
-    ldconfig && \
-    test -f /usr/local/lib/libhts.so && \
-    tabix --version && \
-    echo "HTSlib installed OK"
-
-
+RUN echo "Verifying bcftools..." && \
+    bcftools --version && \
+    echo "bcftools installed OK"
+    
 RUN echo "Installing minimap2..." && \
-    git clone https://github.com/lh3/minimap2.git && \
+    git clone --depth=1 https://github.com/lh3/minimap2.git && \
     cd minimap2 && \
     git checkout ${MINIMAP2_VERSION} && \
     make && cp minimap2 /usr/local/bin && \
@@ -172,4 +116,48 @@ RUN echo "Installing minimap2..." && \
 RUN echo "Verifying minimap2..." && \
     minimap2 --version && \
     echo "minimap2 installed OK"
+
+RUN echo "Installing fastp..." && \
+    curl -L -o fastp-${FASTP_VERSION}.tar.gz https://github.com/OpenGene/fastp/archive/refs/tags/${FASTP_VERSION}.tar.gz && \
+    tar -xzf fastp-${FASTP_VERSION}.tar.gz && \
+    cd fastp-${FASTP_VERSION#v} && \
+    make && cp fastp /usr/local/bin && \
+    cd .. && rm -rf fastp-${FASTP_VERSION#v} fastp-${FASTP_VERSION}.tar.gz
+
+RUN echo "Verifying fastp..." && \
+    fastp --version && \
+    echo "fastp installed OK"
+
+
+RUN echo "Installing GATK..." && \
+    wget -q https://github.com/broadinstitute/gatk/releases/download/${GATK_VERSION}/gatk-${GATK_VERSION}.zip && \
+    unzip gatk-${GATK_VERSION}.zip && \
+    mv gatk-${GATK_VERSION} /opt/gatk && \
+    ln -s /opt/gatk/gatk /usr/local/bin/gatk && \
+    rm gatk-${GATK_VERSION}.zip
+
+RUN echo "Verifying GATK..." && \
+    gatk --version && \
+    echo "GATK installed OK"
+
+
+RUN git clone --depth=1 ${TRIM_QUALS_REPO} && \
+    cd trim_quals && \
+    git checkout ${TRIM_QUALS_COMMIT} && \
+    cargo install --path . --root /usr/local && \
+    cd .. && rm -rf trim_quals
+
+RUN echo "Verifying trim_quals..." && \
+    trim_quals --help && \
+    echo "trim_quals OK"
+
+RUN git clone --depth=1 ${SEQ_STATS_REPO} && \
+    cd seq_stats && \
+    git checkout ${SEQ_STATS_COMMIT} && \
+    cargo install --path . && \
+    cd .. && rm -rf seq_stats
+
+RUN echo "Verifying seq_stats..." && \
+    trim_quals --help && \
+    echo "trim_quals OK"
 
